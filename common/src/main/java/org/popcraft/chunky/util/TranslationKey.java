@@ -31,6 +31,9 @@ public final class TranslationKey {
     public static final String FORMAT_TRIM_CONFIRM = "format_trim_confirm";
     public static final String FORMAT_TRIM_CONFIRM_INSIDE = "format_trim_confirm_inside";
     public static final String FORMAT_TRIM_CONFIRM_INHABITED = "format_trim_confirm_inhabited";
+    public static final String FORMAT_TRIM_LAST_VISIT = "format_trim_last_visit";
+    public static final String FORMAT_TRIM_FILTER_OR = "format_trim_filter_or";
+    public static final String FORMAT_TRIM_DRY_RUN = "format_trim_dry_run";
     public static final String FORMAT_PATTERN = "format_pattern";
     public static final String FORMAT_PAUSE = "format_pause";
     public static final String FORMAT_PAUSE_NO_TASKS = "format_pause_no_tasks";
@@ -91,6 +94,7 @@ public final class TranslationKey {
     public static final String SHAPE_STAR = "shape_star";
     public static final String SHAPE_TRIANGLE = "shape_triangle";
     public static final String TASK_TRIM = "task_trim";
+    public static final String TASK_TRIM_DRY_RUN = "task_trim_dry_run";
     public static final String TASK_TRIM_UPDATE = "task_trim_update";
     public static final String TASK_DONE = "task_done";
     public static final String TASK_STOPPED = "task_stopped";

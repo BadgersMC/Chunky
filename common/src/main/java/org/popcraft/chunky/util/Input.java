@@ -5,6 +5,7 @@ import org.popcraft.chunky.iterator.PatternType;
 import org.popcraft.chunky.platform.World;
 import org.popcraft.chunky.shape.ShapeType;
 
+import java.time.Duration;
 import java.util.Optional;
 
 public final class Input {
@@ -87,6 +88,29 @@ public final class Input {
         return suffixValue(input.charAt(last))
                 .map(suffixValue -> tryDouble(input.substring(0, last)).map(d -> d * suffixValue))
                 .orElse(tryDouble(input));
+    }
+
+    public static Optional<Duration> tryDuration(final String input) {
+        if (input == null || input.length() < 2) {
+            return Optional.empty();
+        }
+        final String lower = input.toLowerCase();
+        try {
+            if (lower.endsWith("ms")) {
+                return tryLong(lower.substring(0, lower.length() - 2)).map(Duration::ofMillis);
+            }
+            final long value = Long.parseLong(lower.substring(0, lower.length() - 1));
+            return switch (lower.charAt(lower.length() - 1)) {
+                case 's' -> Optional.of(Duration.ofSeconds(value));
+                case 'm' -> Optional.of(Duration.ofMinutes(value));
+                case 'h' -> Optional.of(Duration.ofHours(value));
+                case 'd' -> Optional.of(Duration.ofDays(value));
+                case 'w' -> Optional.of(Duration.ofDays(Math.multiplyExact(value, 7)));
+                default -> Optional.empty();
+            };
+        } catch (NumberFormatException | ArithmeticException e) {
+            return Optional.empty();
+        }
     }
 
     public static Optional<Long> tryLong(final String input) {

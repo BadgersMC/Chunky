@@ -9,6 +9,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.ServicePriority;
@@ -131,6 +134,27 @@ public final class ChunkyBukkit extends JavaPlugin implements Listener {
     @EventHandler
     public void onWorldInit(final WorldInitEvent event) {
         chunky.getRegionCache().clear(event.getWorld().getName());
+    }
+
+    @EventHandler
+    public void onPlayerJoin(final PlayerJoinEvent event) {
+        chunky.getVisitTracker().record(new BukkitPlayer(event.getPlayer()));
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPlayerMove(final PlayerMoveEvent event) {
+        final org.bukkit.Location from = event.getFrom();
+        final org.bukkit.Location to = event.getTo();
+        if (to != null && (from.getWorld() != to.getWorld()
+                || (from.getBlockX() >> 4) != (to.getBlockX() >> 4)
+                || (from.getBlockZ() >> 4) != (to.getBlockZ() >> 4))) {
+            chunky.getVisitTracker().record(new BukkitPlayer(event.getPlayer()));
+        }
+    }
+
+    @EventHandler
+    public void onPlayerQuit(final PlayerQuitEvent event) {
+        chunky.getVisitTracker().record(new BukkitPlayer(event.getPlayer()));
     }
 
     private void disablePauseWhenEmptySeconds() {

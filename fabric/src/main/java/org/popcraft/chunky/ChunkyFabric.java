@@ -134,7 +134,9 @@ public class ChunkyFabric implements ModInitializer {
                     argument(CommandLiteral.RADIUS_X, word()),
                     argument(CommandLiteral.RADIUS_Z, word()),
                     argument(CommandLiteral.TRIM_MODE, string()).suggests(SuggestionProviders.TRIM_MODES),
-                    argument(CommandLiteral.INHABITED, word()));
+                    argument(CommandLiteral.INHABITED, word()),
+                    argument(CommandLiteral.LAST_VISIT, word()),
+                    argument(CommandLiteral.DRY_RUN, word()));
             registerArguments(command, literal(CommandLiteral.WORLDBORDER));
             registerArguments(command, literal(CommandLiteral.WORLD),
                     argument(CommandLiteral.WORLD, dimension()));
