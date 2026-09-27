@@ -28,7 +28,6 @@ import org.popcraft.chunky.event.EventBus;
 import org.popcraft.chunky.platform.Config;
 import org.popcraft.chunky.platform.Sender;
 import org.popcraft.chunky.platform.Server;
-import org.popcraft.chunky.util.ChunkVisitTracker;
 import org.popcraft.chunky.util.Input;
 import org.popcraft.chunky.util.PendingAction;
 import org.popcraft.chunky.util.RegionCache;
@@ -54,7 +53,6 @@ public class Chunky {
     private final EventBus eventBus;
     private final Selection.Builder selection;
     private final TaskScheduler scheduler = new TaskScheduler();
-    private final ChunkVisitTracker visitTracker;
     private final Map<String, GenerationTask> generationTasks = new ConcurrentHashMap<>();
     private final Map<String, TrimCommand.Task> trimTasks = new ConcurrentHashMap<>();
     private final Map<String, PendingAction> pendingActions = new HashMap<>();
@@ -70,7 +68,6 @@ public class Chunky {
         this.taskLoader = new TaskLoader(this);
         this.eventBus = new EventBus();
         this.selection = Selection.builder(this, server.getWorlds().get(0));
-        this.visitTracker = new ChunkVisitTracker(config.getDirectory().resolve("visits"));
         this.limit = loadLimit().orElse(Double.MAX_VALUE);
         this.version = loadVersion();
         this.commands = loadCommands();
@@ -82,7 +79,6 @@ public class Chunky {
         taskLoader.saveTasks();
         getGenerationTasks().values().forEach(generationTask -> generationTask.stop(false));
         getScheduler().cancelTasks();
-        visitTracker.close();
         ChunkyProvider.unregister();
     }
 
@@ -184,10 +180,6 @@ public class Chunky {
 
     public RegionCache getRegionCache() {
         return regionCache;
-    }
-
-    public ChunkVisitTracker getVisitTracker() {
-        return visitTracker;
     }
 
     public double getLimit() {

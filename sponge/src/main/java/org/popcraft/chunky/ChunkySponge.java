@@ -21,8 +21,6 @@ import org.spongepowered.api.event.lifecycle.ConstructPluginEvent;
 import org.spongepowered.api.event.lifecycle.LoadedGameEvent;
 import org.spongepowered.api.event.lifecycle.RegisterCommandEvent;
 import org.spongepowered.api.event.lifecycle.StoppingEngineEvent;
-import org.spongepowered.api.scheduler.Task;
-import org.spongepowered.api.util.Ticks;
 import org.spongepowered.api.world.server.ServerWorld;
 import org.spongepowered.plugin.PluginContainer;
 import org.spongepowered.plugin.builtin.jvm.Plugin;
@@ -54,11 +52,6 @@ public class ChunkySponge {
         if (chunky.getConfig().getContinueOnRestart()) {
             chunky.getCommands().get(CommandLiteral.CONTINUE).execute(chunky.getServer().getConsole(), CommandArguments.empty());
         }
-        game.server().scheduler().submit(Task.builder()
-                .execute(() -> chunky.getVisitTracker().recordPlayers(chunky.getServer().getPlayers()))
-                .interval(Ticks.of(20))
-                .plugin(container)
-                .build());
     }
 
     @Listener
@@ -189,11 +182,7 @@ public class ChunkySponge {
                 .permission("chunky.command.radius")
                 .addParameters(
                         Parameter.string().key(CommandLiteral.RADIUS_X).terminal().build(),
-                        Parameter.string().key(CommandLiteral.RADIUS_Z).terminal().build(),
-                        Parameter.string().key(CommandLiteral.TRIM_MODE).terminal().completer(SuggestionProviders.TRIM_MODES).build(),
-                        Parameter.string().key(CommandLiteral.INHABITED).terminal().build(),
-                        Parameter.string().key(CommandLiteral.LAST_VISIT).terminal().build(),
-                        Parameter.string().key(CommandLiteral.DRY_RUN).terminal().build()
+                        Parameter.string().key(CommandLiteral.RADIUS_Z).terminal().build()
                 )
                 .executor(ctx -> {
                     final List<String> args = new ArrayList<>();
@@ -276,7 +265,11 @@ public class ChunkySponge {
                         Parameter.string().key(CommandLiteral.X).terminal().build(),
                         Parameter.string().key(CommandLiteral.Z).terminal().build(),
                         Parameter.string().key(CommandLiteral.RADIUS_X).terminal().build(),
-                        Parameter.string().key(CommandLiteral.RADIUS_Z).terminal().build()
+                        Parameter.string().key(CommandLiteral.RADIUS_Z).terminal().build(),
+                        Parameter.string().key(CommandLiteral.TRIM_MODE).terminal().completer(SuggestionProviders.TRIM_MODES).build(),
+                        Parameter.string().key(CommandLiteral.INHABITED).terminal().build(),
+                        Parameter.string().key(CommandLiteral.LAST_UPDATE).terminal().build(),
+                        Parameter.string().key(CommandLiteral.DRY_RUN).terminal().build()
                 )
                 .terminal(true)
                 .executor(ctx -> {
@@ -289,7 +282,7 @@ public class ChunkySponge {
                     ctx.one(Parameter.key(CommandLiteral.RADIUS_Z, String.class)).ifPresent(args::add);
                     ctx.one(Parameter.key(CommandLiteral.TRIM_MODE, String.class)).ifPresent(args::add);
                     ctx.one(Parameter.key(CommandLiteral.INHABITED, String.class)).ifPresent(args::add);
-                    ctx.one(Parameter.key(CommandLiteral.LAST_VISIT, String.class)).ifPresent(args::add);
+                    ctx.one(Parameter.key(CommandLiteral.LAST_UPDATE, String.class)).ifPresent(args::add);
                     ctx.one(Parameter.key(CommandLiteral.DRY_RUN, String.class)).ifPresent(args::add);
                     executeSpongeCommand(ctx, CommandLiteral.TRIM, args);
                     return CommandResult.success();

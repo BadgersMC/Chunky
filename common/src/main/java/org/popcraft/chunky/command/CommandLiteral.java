@@ -12,7 +12,7 @@ public final class CommandLiteral {
     public static final String CORNERS = "corners";
     public static final String HELP = "help";
     public static final String INHABITED = "inhabited";
-    public static final String LAST_VISIT = "lastVisit";
+    public static final String LAST_UPDATE = "lastUpdate";
     public static final String DRY_RUN = "dryRun";
     public static final String INTERVAL = "interval";
     public static final String PAGE = "page";

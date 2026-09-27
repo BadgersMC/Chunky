@@ -39,7 +39,7 @@ final class TrimOptions {
         return hasInhabitedTime() || hasStaleAfter();
     }
 
-    public boolean shouldTrim(final OptionalLong chunkInhabitedTime, final OptionalLong lastVisit, final long now) {
+    public boolean shouldTrim(final OptionalLong chunkInhabitedTime, final OptionalLong lastUpdate, final long now) {
         if (!hasFilters()) {
             return true;
         }
@@ -49,7 +49,7 @@ final class TrimOptions {
         }
         if (hasStaleAfter()) {
             final long cutoff = now - staleAfter.orElseThrow().toMillis();
-            matches |= lastVisit.isPresent() && lastVisit.getAsLong() <= cutoff;
+            matches |= lastUpdate.isPresent() && lastUpdate.getAsLong() <= cutoff;
         }
         return matches;
     }

@@ -32,7 +32,7 @@ import java.util.stream.Stream;
 import static org.popcraft.chunky.util.Translator.translate;
 
 public class TrimCommand implements ChunkyCommand {
-    private static final String LAST_VISIT_OPTION = "last-visit=";
+    private static final String LAST_UPDATE_OPTION = "last-update=";
     private static final String DRY_RUN_OPTION = "dry-run";
     private final Chunky chunky;
 
@@ -112,8 +112,8 @@ public class TrimCommand implements ChunkyCommand {
                 continue;
             }
             final String lower = argument.toLowerCase();
-            if (lower.startsWith(LAST_VISIT_OPTION) && staleAfter.isEmpty()) {
-                final String durationInput = argument.substring(LAST_VISIT_OPTION.length());
+            if (lower.startsWith(LAST_UPDATE_OPTION) && staleAfter.isEmpty()) {
+                final String durationInput = argument.substring(LAST_UPDATE_OPTION.length());
                 final Optional<Duration> parsedDuration = Input.tryDuration(durationInput)
                         .filter(duration -> !duration.isZero() && !duration.isNegative());
                 if (parsedDuration.isPresent()) {
@@ -131,7 +131,7 @@ public class TrimCommand implements ChunkyCommand {
         }
 
         final TrimOptions options = new TrimOptions(inhabitedTime, staleAfter, dryRun);
-        final String lastVisitDisplay = staleAfterDisplay;
+        final String lastUpdateDisplay = staleAfterDisplay;
         final Selection selection = chunky.getSelection().build();
         final Shape shape = ShapeFactory.getShape(selection);
         final Runnable trimAction = () -> chunky.getScheduler().runTask(() -> {
@@ -180,7 +180,7 @@ public class TrimCommand implements ChunkyCommand {
             }
         });
 
-        sendFilterNotices(sender, options, lastVisitDisplay);
+        sendFilterNotices(sender, options, lastUpdateDisplay);
         if (options.dryRun()) {
             sender.sendMessagePrefixed(TranslationKey.FORMAT_TRIM_DRY_RUN);
             trimAction.run();
@@ -191,12 +191,12 @@ public class TrimCommand implements ChunkyCommand {
         sender.sendMessagePrefixed(inside ? TranslationKey.FORMAT_TRIM_CONFIRM_INSIDE : TranslationKey.FORMAT_TRIM_CONFIRM, selection.world().getName(), translate("shape_" + selection.shape()), Formatting.number(selection.centerX()), Formatting.number(selection.centerZ()), Formatting.radius(selection), "/chunky confirm");
     }
 
-    private void sendFilterNotices(final Sender sender, final TrimOptions options, final String lastVisitDisplay) {
+    private void sendFilterNotices(final Sender sender, final TrimOptions options, final String lastUpdateDisplay) {
         if (options.hasInhabitedTime()) {
             sender.sendMessagePrefixed(TranslationKey.FORMAT_TRIM_CONFIRM_INHABITED, Formatting.number(options.inhabitedTime()));
         }
         if (options.hasStaleAfter()) {
-            sender.sendMessagePrefixed(TranslationKey.FORMAT_TRIM_LAST_VISIT, lastVisitDisplay);
+            sender.sendMessagePrefixed(TranslationKey.FORMAT_TRIM_LAST_UPDATE, lastUpdateDisplay);
         }
         if (options.hasInhabitedTime() && options.hasStaleAfter()) {
             sender.sendMessagePrefixed(TranslationKey.FORMAT_TRIM_FILTER_OR);
@@ -241,8 +241,6 @@ public class TrimCommand implements ChunkyCommand {
             if (entitiesPath != null) {
                 Files.deleteIfExists(entitiesPath);
             }
-            ChunkCoordinate.fromRegionFile(regionFileName)
-                    .ifPresent(region -> chunky.getVisitTracker().clearRegion(world.getName(), region.x(), region.z()));
             return 1024;
         } catch (IOException e) {
             e.printStackTrace();
@@ -260,7 +258,7 @@ public class TrimCommand implements ChunkyCommand {
         try (final RandomAccessFile regionFile = new RandomAccessFile(regionPath.toFile(), options.dryRun() ? "r" : "rw");
              final RandomAccessFile poiFile = options.dryRun() || poiPath == null || Files.notExists(poiPath) ? null : new RandomAccessFile(poiPath.toFile(), "rw");
              final RandomAccessFile entitiesFile = options.dryRun() || entitiesPath == null || Files.notExists(entitiesPath) ? null : new RandomAccessFile(entitiesPath.toFile(), "rw")) {
-            if (regionFile.length() < 4096) {
+            if (regionFile.length() < 4096 || (options.hasStaleAfter() && regionFile.length() < 8192)) {
                 return 0;
             }
             final boolean poiValid = poiFile != null && poiFile.length() >= 4096;
@@ -277,24 +275,25 @@ public class TrimCommand implements ChunkyCommand {
                     if (!trimChunk) {
                         continue;
                     }
+                    final int chunkLocation = ((offsetX % 32) + (offsetZ % 32) * 32) * 4;
+                    regionFile.seek(chunkLocation);
+                    final boolean chunkExists = regionFile.readInt() != 0;
+                    if (!chunkExists) {
+                        continue;
+                    }
                     final OptionalLong inhabitedTime = getInhabitedTime(regionData, offsetChunkX, offsetChunkZ);
-                    final OptionalLong lastVisit = options.hasStaleAfter()
-                            ? chunky.getVisitTracker().lastVisit(world.getName(), offsetChunkX, offsetChunkZ)
+                    final OptionalLong lastUpdate = options.hasStaleAfter()
+                            ? getLastUpdate(regionFile, chunkLocation)
                             : OptionalLong.empty();
-                    if (!options.shouldTrim(inhabitedTime, lastVisit, now)) {
+                    if (!options.shouldTrim(inhabitedTime, lastUpdate, now)) {
                         continue;
                     }
 
                     ++marked;
-                    final int chunkLocation = ((offsetX % 32) + (offsetZ % 32) * 32) * 4;
-                    regionFile.seek(chunkLocation);
-                    final boolean chunkExists = regionFile.readInt() != 0;
-                    if (chunkExists) {
-                        ++affected;
-                        if (!options.dryRun()) {
-                            regionFile.seek(chunkLocation);
-                            regionFile.writeInt(0);
-                        }
+                    ++affected;
+                    if (!options.dryRun()) {
+                        regionFile.seek(chunkLocation);
+                        regionFile.writeInt(0);
                     }
                     if (!options.dryRun()) {
                         if (poiValid) {
@@ -311,7 +310,6 @@ public class TrimCommand implements ChunkyCommand {
                                 entitiesFile.writeInt(0);
                             }
                         }
-                        chunky.getVisitTracker().clear(world.getName(), offsetChunkX, offsetChunkZ);
                     }
                 }
             }
@@ -322,6 +320,15 @@ public class TrimCommand implements ChunkyCommand {
             deleteRegion(world, regionFileName);
         }
         return affected;
+    }
+
+    static OptionalLong getLastUpdate(final RandomAccessFile regionFile, final int chunkLocation) throws IOException {
+        regionFile.seek(4096L + chunkLocation);
+        final long timestampSeconds = Integer.toUnsignedLong(regionFile.readInt());
+        if (timestampSeconds == 0) {
+            return OptionalLong.empty();
+        }
+        return OptionalLong.of(timestampSeconds * 1000L);
     }
 
     private OptionalLong getInhabitedTime(final RegionFile regionData, final int chunkX, final int chunkZ) {
@@ -348,7 +355,7 @@ public class TrimCommand implements ChunkyCommand {
         } else if (arguments.size() == 2) {
             return ShapeType.all();
         } else if (arguments.size() >= 8) {
-            return List.of(LAST_VISIT_OPTION + "30d", DRY_RUN_OPTION);
+            return List.of(LAST_UPDATE_OPTION + "30d", DRY_RUN_OPTION);
         }
         return List.of();
     }

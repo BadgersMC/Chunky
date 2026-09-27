@@ -31,7 +31,7 @@ public final class TranslationKey {
     public static final String FORMAT_TRIM_CONFIRM = "format_trim_confirm";
     public static final String FORMAT_TRIM_CONFIRM_INSIDE = "format_trim_confirm_inside";
     public static final String FORMAT_TRIM_CONFIRM_INHABITED = "format_trim_confirm_inhabited";
-    public static final String FORMAT_TRIM_LAST_VISIT = "format_trim_last_visit";
+    public static final String FORMAT_TRIM_LAST_UPDATE = "format_trim_last_update";
     public static final String FORMAT_TRIM_FILTER_OR = "format_trim_filter_or";
     public static final String FORMAT_TRIM_DRY_RUN = "format_trim_dry_run";
     public static final String FORMAT_PATTERN = "format_pattern";

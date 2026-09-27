@@ -13,13 +13,13 @@ public class TrimOptionsTest {
     private static final long NOW = 1_800_000_000_000L;
 
     @Test
-    public void unknownVisitHistoryIsProtectedFromStaleFilter() {
+    public void missingChunkTimestampIsProtectedFromStaleFilter() {
         final TrimOptions options = new TrimOptions(OptionalLong.empty(), Optional.of(Duration.ofDays(30)), false);
         assertFalse(options.shouldTrim(OptionalLong.empty(), OptionalLong.empty(), NOW));
     }
 
     @Test
-    public void knownOldVisitMatchesStaleFilter() {
+    public void oldChunkUpdateMatchesStaleFilter() {
         final TrimOptions options = new TrimOptions(OptionalLong.empty(), Optional.of(Duration.ofDays(30)), false);
         assertTrue(options.shouldTrim(OptionalLong.empty(), OptionalLong.of(NOW - Duration.ofDays(31).toMillis()), NOW));
     }
